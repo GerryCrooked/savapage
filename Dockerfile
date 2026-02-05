@@ -1,35 +1,53 @@
-FROM debian:bookworm
+FROM ubuntu:22.04
 
-# Install dependencies
-RUN apt update && apt install --no-install-recommends --no-install-suggests -y \
-    binutils cpio cups cups-bsd debianutils default-jdk-headless gzip imagemagick \
-    librsvg2-bin perl poppler-utils qpdf supervisor wkhtmltopdf libheif-examples \
-    vim-tiny findutils apt-utils iputils-ping gnupg curl hplip wget nano usbutils procps
+ARG INSTALLER_FILE
 
-# Copy supervisor config
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 1. Install Dependencies
+RUN apt-get update && apt-get install -y \
+    cups \
+    cups-pdf \
+    libcups2 \
+    sudo \
+    wget \
+    unzip \
+    tar \
+    gettext \
+    iputils-ping \
+    usbutils \
+    supervisor \
+    postgresql-client \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Create Users
+RUN useradd -m -s /bin/bash savapage && \
+    usermod -aG sudo savapage && \
+    usermod -aG lpadmin savapage && \
+    echo "savapage:savapage" | chpasswd
+
+# 3. Enable Remote Admin for CUPS (Prepare config)
+RUN /usr/sbin/cupsd && \
+    /usr/sbin/cupsctl --remote-any --share-printers && \
+    service cups stop
+
+# --- WICHTIG: Backup der Config erstellen ---
+# Da wir /etc/cups später überschreiben (Mount), sichern wir das Original hier.
+RUN cp -rp /etc/cups /etc/cups-orig
+
+# 4. Install SavaPage
+COPY ${INSTALLER_FILE} /tmp/savapage-setup.bin
+RUN chmod +x /tmp/savapage-setup.bin && \
+    # Run installer as savapage user but allow root tasks via sudo
+    sudo -u savapage /tmp/savapage-setup.bin -n && \
+    rm /tmp/savapage-setup.bin
+
+# 5. Setup Supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Create user
-RUN useradd -rmd /opt/savapage -s /bin/bash -G lpadmin savapage && \
-    chown savapage:savapage /opt/savapage && \
-    echo 'savapage:savapage' | chpasswd
-
-USER savapage
-
-# --- DYNAMIC INSTALLER ---
-# INSTALLER_FILE argument is passed from build.sh
-ARG INSTALLER_FILE
-COPY ./${INSTALLER_FILE} /opt/savapage/savapage-setup.bin
-# -------------------------
-
-# Run setup
-RUN ["bash", "/opt/savapage/savapage-setup.bin", "-n"]
-
-USER root
-# Run root tasks (PAM, etc.)
-RUN ["/opt/savapage/server/bin/linux-x64/roottasks", "pam"]
-
-# Expose ports (mapped in docker-compose)
+# Expose Ports
 EXPOSE 631 8631
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+# Start via Supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
