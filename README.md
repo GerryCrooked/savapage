@@ -33,8 +33,8 @@ It **does not** apply to:
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/savapage-docker.git](https://github.com/your-username/savapage-docker.git)
-    cd savapage-docker
+    git clone https://github.com/GerryCrooked/savapage.git
+    cd savapage
     ```
 
 2.  **Make the script executable:**
