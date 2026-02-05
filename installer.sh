@@ -96,7 +96,8 @@ if command -v lsusb &> /dev/null; then
         
         echo ""
         echo "Enter the numbers of the devices you want to add, separated by space."
-        read -p "Selection (e.g., '0 2'): " USB_SELECTION
+        echo "Example for multiple devices: 0 2 3"
+        read -p "Selection: " USB_SELECTION
 
         if [ -n "$USB_SELECTION" ]; then
             # Start building the YAML block
@@ -119,7 +120,7 @@ if command -v lsusb &> /dev/null; then
                     # Add to YAML string
                     USB_DEVICES_YAML="${USB_DEVICES_YAML}\n      - ${USB_PATH}:${USB_PATH}"
                     # Add to array for final output
-                    SELECTED_DEVICE_NAMES+=("$NAME ($USB_PATH)")
+                    SELECTED_DEVICE_NAMES+=("$NAME")
                 fi
             done
         fi
