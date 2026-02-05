@@ -1,4 +1,3 @@
-cat > docker-compose.yml <<'EOF'
 services:
   savapage:
     hostname: sp-server
@@ -61,4 +60,3 @@ networks:
   default:
     name: docker_savapage_network
     driver: bridge
-EOF
