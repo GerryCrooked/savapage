@@ -20,7 +20,8 @@ services:
       - SP_SRV_13=database.url:jdbc:postgresql://postgres:5432/${POSTGRES_DB:-savapage}
       - SP_SRV_14=database.user:${POSTGRES_USER:-savapage}
       - SP_SRV_15=database.password:${POSTGRES_PASSWORD:-savapage}
-      
+#   devices:
+#     - /dev/bus/usb/004/004:/dev/bus/usb/004/004
     ports:
       - "${SP_CUPS_PORT:-631}:631"
       - "${SP_HTTP_PORT:-8631}:${SP_HTTP_PORT:-8631}"
