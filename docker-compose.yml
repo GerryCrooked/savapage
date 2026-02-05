@@ -1,0 +1,74 @@
+services:
+  savapage:
+    hostname: sp-server
+    image: savapage
+    container_name: savapage_savapage
+    environment:
+      - TZ=Europe/Berlin
+      
+      # --- Values from .env file ---
+      - SAVAPAGE_NS=${SAVAPAGE_NS}
+      - SP_CONTAINER=${SP_CONTAINER}
+      
+      # App Config
+      - SP_SRV_01=visitor.organization:My Company
+      - SP_SRV_02=server.port:${SP_HTTP_PORT}
+      
+      # Database Config
+      - SP_SRV_11=database.type:PostgreSQL
+      - SP_SRV_12=database.driver:org.postgresql.Driver
+      - SP_SRV_13=database.url:jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      - SP_SRV_14=database.user:${POSTGRES_USER}
+      - SP_SRV_15=database.password:${POSTGRES_PASSWORD}
+      
+    ports:
+      - "${SP_CUPS_PORT}:631"
+      - "${SP_HTTP_PORT}:${SP_HTTP_PORT}"
+    networks:
+      - default
+    depends_on:
+      - postgres
+    volumes:
+      - ./supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
+      - ./init-savapage.sql:/docker-entrypoint-initdb.d/init.sql
+      - savapage_custom:/opt/savapage/server/custom
+      - savapage_data:/opt/savapage/server/data
+      - savapage_ext:/opt/savapage/server/ext
+      - savapage_logs:/opt/savapage/server/logs
+      - savapage_cups:/etc/cups
+    restart: unless-stopped
+
+  postgres:
+    hostname: sp-postgres
+    image: postgres:15-alpine
+    container_name: savapage_postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    networks:
+      - default
+    volumes:
+      - savapage_database:/var/lib/postgresql/data
+      # Initialization script
+      - ./init-savapage.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+networks:
+  default:
+    name: docker_savapage_network
+    driver: bridge
+
+volumes:
+  savapage_custom:
+    driver: local
+  savapage_data:
+    driver: local
+  savapage_ext:
+    driver: local
+  savapage_database:
+    driver: local
+  savapage_logs:
+    driver: local
+  savapage_cups:
+    driver: local
