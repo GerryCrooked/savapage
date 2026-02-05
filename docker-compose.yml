@@ -1,3 +1,4 @@
+cat > docker-compose.yml <<'EOF'
 services:
   savapage:
     hostname: sp-server
@@ -6,24 +7,24 @@ services:
     environment:
       - TZ=Europe/Berlin
       
-      # --- Values from .env file ---
-      - SAVAPAGE_NS=${SAVAPAGE_NS}
-      - SP_CONTAINER=${SP_CONTAINER}
+      # --- Values from .env file (with Fallbacks) ---
+      - SAVAPAGE_NS=${SAVAPAGE_NS:-SP_}
+      - SP_CONTAINER=${SP_CONTAINER:-DOCKER}
       
       # App Config
       - SP_SRV_01=visitor.organization:My Company
-      - SP_SRV_02=server.port:${SP_HTTP_PORT}
+      - SP_SRV_02=server.port:${SP_HTTP_PORT:-8631}
       
       # Database Config
       - SP_SRV_11=database.type:PostgreSQL
       - SP_SRV_12=database.driver:org.postgresql.Driver
-      - SP_SRV_13=database.url:jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      - SP_SRV_14=database.user:${POSTGRES_USER}
-      - SP_SRV_15=database.password:${POSTGRES_PASSWORD}
+      - SP_SRV_13=database.url:jdbc:postgresql://postgres:5432/${POSTGRES_DB:-savapage}
+      - SP_SRV_14=database.user:${POSTGRES_USER:-savapage}
+      - SP_SRV_15=database.password:${POSTGRES_PASSWORD:-savapage}
       
     ports:
-      - "${SP_CUPS_PORT}:631"
-      - "${SP_HTTP_PORT}:${SP_HTTP_PORT}"
+      - "${SP_CUPS_PORT:-631}:631"
+      - "${SP_HTTP_PORT:-8631}:${SP_HTTP_PORT:-8631}"
     networks:
       - default
     depends_on:
@@ -31,11 +32,12 @@ services:
     volumes:
       - ./supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
       - ./init-savapage.sql:/docker-entrypoint-initdb.d/init.sql
-      - savapage_custom:/opt/savapage/server/custom
-      - savapage_data:/opt/savapage/server/data
-      - savapage_ext:/opt/savapage/server/ext
-      - savapage_logs:/opt/savapage/server/logs
-      - savapage_cups:/etc/cups
+      # Dynamic Storage Paths with Fallback to ./volumes
+      - ${SP_STORAGE_PATH:-./volumes}/custom:/opt/savapage/server/custom
+      - ${SP_STORAGE_PATH:-./volumes}/data:/opt/savapage/server/data
+      - ${SP_STORAGE_PATH:-./volumes}/ext:/opt/savapage/server/ext
+      - ${SP_STORAGE_PATH:-./volumes}/logs:/opt/savapage/server/logs
+      - ${SP_STORAGE_PATH:-./volumes}/cups:/etc/cups
     restart: unless-stopped
 
   postgres:
@@ -43,13 +45,14 @@ services:
     image: postgres:15-alpine
     container_name: savapage_postgres
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER:-savapage}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-savapage}
+      - POSTGRES_DB=${POSTGRES_DB:-savapage}
     networks:
       - default
     volumes:
-      - savapage_database:/var/lib/postgresql/data
+      # Dynamic Storage Path for Database with Fallback
+      - ${SP_STORAGE_PATH:-./volumes}/database:/var/lib/postgresql/data
       # Initialization script
       - ./init-savapage.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
@@ -58,17 +61,4 @@ networks:
   default:
     name: docker_savapage_network
     driver: bridge
-
-volumes:
-  savapage_custom:
-    driver: local
-  savapage_data:
-    driver: local
-  savapage_ext:
-    driver: local
-  savapage_database:
-    driver: local
-  savapage_logs:
-    driver: local
-  savapage_cups:
-    driver: local
+EOF
