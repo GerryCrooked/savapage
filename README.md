@@ -20,6 +20,7 @@ It **does not** apply to:
 * **PostgreSQL Integration:** Automatically configures an external PostgreSQL container instead of the internal Derby database.
 * **Data Persistence:** Uses local bind mounts for easy backup and access to data, configuration, logs, and custom files.
 * **Zero-Config Deployment:** Generates a `.env` file and starts the environment automatically.
+* **Support for USB Printers:** You can add USB Printers by manually editing the `docker-compose.yml` after the installation.
 
 ## Prerequisites
 
